@@ -1,0 +1,240 @@
+---
+title: "Midterm-Dashboard-1"
+author: "Matt Neeley"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggthemes)
+library(ggrepel)
+library(patchwork)
+```
+
+## Downloading Datasets
+```{r}
+load("~/Desktop/STA 309/Midterm/Dashboard1/MidtermDash.RData")
+```
+
+## Data Wrangling for 2020-2021 School Year
+```{r}
+mathyear2021 <- math2021 %>%
+  filter(STNAM == "FLORIDA",
+         GRADE == "00",
+         CATEGORY == "ALL",
+         LEANM != "FL VIRTUAL",
+         LEANM != "DEAF/BLIND",
+         LEANM != "UF LAB SCH",
+         LEANM != "FAMU LAB SCH",
+         LEANM != "FSU LAB SCH",
+         LEANM != "FAU LAB SCH") %>%
+  mutate(PCTPROF = as.numeric(PCTPROF),
+         LEANM = tolower(LEANM)) %>%
+  rename("math_PCTPROF" = PCTPROF,
+         "math_NUMVALID" = NUMVALID) %>%
+  select(LEANM,SCHOOL_YEAR, math_NUMVALID, math_PCTPROF)
+```
+
+## Plot comparing 2020-2021 Math Profiency Scores and the Number of Tests Taken in each School District/County
+```{r}
+ggplot(mathyear2021,aes(x=math_PCTPROF, y=math_NUMVALID)) +
+  geom_point()+
+  geom_smooth(method="lm", color="gray50", se=FALSE) +
+  xlab("Math Profiency Scores") +
+  ylab("Number of Tests") +
+  theme_minimal() +
+  labs(title = "2020-2021 School Year")
+
+comparemathnum <- ggplot(mathyear2021,aes(x=math_PCTPROF, y=math_NUMVALID)) +
+  geom_point()+
+  geom_smooth(method="lm", color="gray50", se=FALSE) +
+  xlab("Math Profiency Scores") +
+  ylab("Number of Tests") +
+  theme_minimal() +
+  labs(title = "2020-2021 School Year")
+```
+
+## Data Wrangling for Florida Maps
+```{r}
+us_counties <- map_data("county")
+florida_map <- us_counties %>%
+  filter(region=="florida") %>%
+  mutate(subregion = str_replace_all(subregion,"de soto", "desoto"),
+         subregion = str_replace_all(subregion,"st lucie", "st. lucie"))
+florida <- mathyear2021 %>%
+  left_join(florida_map, by=c("LEANM" = "subregion"))
+```
+
+## Creating Florida Maps
+```{r}
+ggplot(florida, aes(x=long, y=lat, group=group) ) +
+  geom_polygon(aes(fill=math_PCTPROF), color="black") + 
+  coord_map() +
+  scale_fill_gradient2(low="gray99", mid="dodgerblue3", high="#0B0284", 
+                       limits=c(25,79), midpoint=48 ) +
+  theme_map() +
+  theme(legend.title = element_blank(),
+        legend.key.size = unit(.7,"line"))+
+  labs(title = "Profiency Scores")
+
+mathflorida <- ggplot(florida, aes(x=long, y=lat, group=group) ) +
+  geom_polygon(aes(fill=math_PCTPROF), color="black") + 
+  coord_map() +
+  scale_fill_gradient2(low="gray99", mid="dodgerblue3", high="#0B0284", 
+                       limits=c(25,79), midpoint=48 ) +
+  theme_map() +
+  theme(legend.title = element_blank(),
+        legend.key.size = unit(.7,"line"))+
+  labs(title = "Profiency Scores")
+
+ggplot(florida, aes(x=long, y=lat, group=group) ) +
+  geom_polygon(aes(fill=math_NUMVALID), color="black") + 
+  coord_map() +
+  scale_fill_gradient2(low="gray99", mid="goldenrod1", high="firebrick4",
+                       midpoint=21903.37, limits=c(1, 180000)) +
+  theme_map() +
+  theme(legend.title = element_blank(),
+        legend.key.size = unit(.7,"line")) +
+  labs(title = "Number of Tests Taken")
+
+numflorida <- ggplot(florida, aes(x=long, y=lat, group=group) ) +
+  geom_polygon(aes(fill=math_NUMVALID), color="black") + 
+  coord_map() +
+  scale_fill_gradient2(low="gray99", mid="goldenrod1", high="firebrick4",
+                       midpoint=21903.37, limits=c(1, 180000)) +
+  theme_map() +
+  theme(legend.title = element_blank(),
+        legend.key.size = unit(.7,"line")) +
+  labs(title = "Number of Tests Taken")
+```
+
+## Data Wrangling for 2015-2021 School Years
+```{r}
+mathyear1516 <- math1516 %>%
+  filter(STNAM == "FLORIDA",
+         LEANM != "FL VIRTUAL",
+         LEANM != "DEAF/BLIND",
+         LEANM != "UF LAB SCH",
+         LEANM != "FAMU LAB SCH",
+         LEANM != "FSU LAB SCH",
+         LEANM != "FAU LAB SCH",
+         LEANM != "WASH SPECIAL") %>%
+  mutate(ALL_MTH00PCTPROF_1516 = as.numeric(ALL_MTH00PCTPROF_1516),
+         LEANM = tolower(LEANM),
+         SCHOOL_YEAR = "2015-2016") %>%
+  rename("math_PCTPROF" = ALL_MTH00PCTPROF_1516,
+         "math_NUMVALID" = ALL_MTH00NUMVALID_1516) %>%
+  select(LEANM, SCHOOL_YEAR, math_NUMVALID,math_PCTPROF)
+
+mathyear1617 <- math1617 %>%
+  filter(STNAM == "FLORIDA",
+         LEANM != "FL VIRTUAL",
+         LEANM != "DEAF/BLIND",
+         LEANM != "UF LAB SCH",
+         LEANM != "FAMU LAB SCH",
+         LEANM != "FSU LAB SCH",
+         LEANM != "FAU LAB SCH",
+         LEANM != "WASH SPECIAL") %>%
+  mutate(ALL_MTH00PCTPROF_1617 = as.numeric(ALL_MTH00PCTPROF_1617),
+         LEANM = tolower(LEANM),
+         SCHOOL_YEAR = "2016-2017") %>%
+  rename("math_PCTPROF" = ALL_MTH00PCTPROF_1617,
+         "math_NUMVALID" = ALL_MTH00NUMVALID_1617) %>%
+  select(LEANM, SCHOOL_YEAR, math_NUMVALID,math_PCTPROF)
+
+mathyear1718 <- math1718 %>%
+  filter(STNAM == "FLORIDA",
+         LEANM != "FL VIRTUAL",
+         LEANM != "DEAF/BLIND",
+         LEANM != "UF LAB SCH",
+         LEANM != "FAMU LAB SCH",
+         LEANM != "FSU LAB SCH",
+         LEANM != "FAU LAB SCH",
+         LEANM != "WASH SPECIAL") %>%
+  mutate(ALL_MTH00PCTPROF_1718 = as.numeric(ALL_MTH00PCTPROF_1718),
+         LEANM = tolower(LEANM),
+         SCHOOL_YEAR = "2017-2018") %>%
+  rename("math_PCTPROF" = ALL_MTH00PCTPROF_1718,
+         "math_NUMVALID" = ALL_MTH00NUMVALID_1718) %>%
+  select(LEANM, SCHOOL_YEAR, math_NUMVALID,math_PCTPROF)
+
+mathyear1819 <- math1819 %>%
+  filter(STNAM == "FLORIDA",
+         GRADE == "00",
+         CATEGORY == "ALL",
+         LEANM != "FL VIRTUAL",
+         LEANM != "DEAF/BLIND",
+         LEANM != "UF LAB SCH",
+         LEANM != "FAMU LAB SCH",
+         LEANM != "FSU LAB SCH",
+         LEANM != "FAU LAB SCH") %>%
+  mutate(PCTPROF = as.numeric(PCTPROF),
+         LEANM = tolower(LEANM)) %>%
+  rename("math_PCTPROF" = PCTPROF,
+         "math_NUMVALID" = NUMVALID) %>%
+  select(LEANM,SCHOOL_YEAR, math_NUMVALID, math_PCTPROF)
+
+Florida_years <- rbind(mathyear1516,mathyear1617,mathyear1718,mathyear1819,mathyear2021) %>%
+  mutate(LEANM = str_replace_all(LEANM, "miami-dade", "dade"),
+         SCHOOL_YEAR = str_replace_all(SCHOOL_YEAR, "201", "1"),
+         SCHOOL_YEAR = str_replace_all(SCHOOL_YEAR, "2020-2021", "20-21"))
+
+Top5 <- Florida_years %>%
+  filter(LEANM %in% c("miami-dade", "broward","hillsborough", "orange","palm beach"))
+Bottom5 <- Florida_years %>%
+  filter(LEANM %in% c("jefferson", "lafayette","liberty", "franklin","hamilton"))
+
+Florida_AVG <- Florida_years %>%
+  group_by(SCHOOL_YEAR) %>%
+  summarize(Averages = mean(math_PCTPROF),
+            Group = 1)
+```
+
+
+## Creating Slope Line Graph
+```{r}
+ggplot() +
+  geom_line(data=Florida_years, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="grey60", alpha=.15) +
+  geom_line(data=Bottom5, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="goldenrod1", size=1, alpha=.7) +
+  geom_line(data=Top5, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="firebrick", size=1, alpha=.8) +
+  ylab("Math Profiency Scores")+
+  coord_cartesian(expand = FALSE) +
+  annotate(geom = "text", x=4, y=67, label="Most Populated Districts",
+           color="firebrick4", size=4, fontface="bold") +
+  annotate(geom = "text", x=3.5, y=31, label="Least Populated Districts",
+           color="goldenrod3", size=4, fontface="bold") +
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.title.x = element_blank())
+
+YearsFlorida <-ggplot() +
+  geom_line(data=Florida_years, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="grey60", alpha=.15) +
+  geom_line(data=Bottom5, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="goldenrod1", size=1, alpha=.7) +
+  geom_line(data=Top5, aes(x=SCHOOL_YEAR,y=math_PCTPROF, group=LEANM), color="firebrick", size=1, alpha=.8) +
+  ylab("Math Profiency Scores")+
+  coord_cartesian(expand = FALSE) +
+  annotate(geom = "text", x=4, y=67, label="Most Populated Districts",
+           color="firebrick4", size=3.8, fontface="bold") +
+  annotate(geom = "text", x=3.5, y=31, label="Least Populated Districts",
+           color="goldenrod3", size=3.8, fontface="bold") +
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank(),
+        axis.title.x = element_blank()) +
+  labs(title = "School Years 2015-2021",
+       subtitle = "No data for 2020 School Year")
+```
+
+## Creating Dashboard
+```{r}
+(comparemathnum + mathflorida) / (YearsFlorida + numflorida) +
+  plot_annotation(
+    title = 'Correlation Between Number of Tests Taken and Math Profiency Scores in Florida',
+    caption = 'Source: US Department of Education') +
+  plot_layout(widths = c(3,3),
+              heights = c(3,3))
+```
+
+
+
